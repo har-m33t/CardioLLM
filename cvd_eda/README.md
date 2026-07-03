@@ -25,7 +25,7 @@ cvd_eda/
 │   ├── run.sh                       (one-shot entrypoint)
 │   ├── setup.sh                     (installs recount3 / arrow in R)
 │   └── README.md
-├── task4_processing/                (Task 4 — data processing & cleaning)
+├── processing/                     (Task 4 — data processing & cleaning; see its README)
 ├── data/                            (created at runtime; not committed)
 │   ├── human_gene_v2.5.h5           (~45 GB — do not commit)
 │   ├── archs4_raw.h5 -> human_gene_v2.5.h5   (stable symlink)
@@ -45,9 +45,9 @@ repo's own filesystem on the HPC login node.
 |---|-----------------------------------|----------|----------------|
 | 1 | Ingestion — ARCHS4                | Claude   | **Implemented** — see `ingestion/README.md` |
 | 2 | Ingestion — RECOUNT3              | Claude   | **Implemented** — see `task2_recount3/README.md` |
-| 3 | Metadata curation (CVD relevance) | —        | Not started    |
-| 4 | Data processing & cleaning        | —        | Not started    |
-| 5 | Labeling (⚠ human review gate)     | —        | Not started    |
+| 3 | Metadata curation (CVD relevance) | Claude   | **Implemented** — see `curation/README.md` |
+| 4 | Data processing & cleaning        | Claude   | **Implemented** — see `processing/README.md` |
+| 5 | Labeling (⚠ human review gate)     | Claude   | **Implemented** — see `labeling/README.md` |
 | 6 | EDA                               | —        | Not started    |
 | 7 | Reporting                         | —        | Not started    |
 
@@ -90,3 +90,69 @@ Per-project Parquet trios (`{project}_counts.parquet`,
 dir alongside `available_projects_catalog.parquet` and
 `ingestion_log_recount3.json`. The log's schema is documented in
 `task2_recount3/README.md`.
+
+## Running Task 3
+
+Curates per-sample metadata (from Task 1 / Task 2) for CVD relevance using a
+two-tier keyword net plus an LLM triage pass for ambiguous samples. Full
+details in `curation/README.md`. Briefly:
+
+```bash
+source .venv/bin/activate
+uv pip install h5py pandas pyarrow anthropic   # if not already installed
+export ANTHROPIC_API_KEY=sk-ant-...             # required unless --disable-llm
+
+# ARCHS4
+python -m cvd_eda.curation \
+    --dataset archs4 \
+    --input   "$CVD_EDA_DATA_DIR/archs4_raw.h5" \
+    --llm-cache cvd_eda/logs/curation_llm_cache/
+
+# RECOUNT3 (--input is repeatable; pass every coldata parquet Task 2 exported)
+python -m cvd_eda.curation \
+    --dataset recount3 \
+    --input cvd_eda/data/recount3_raw/HEART_coldata.parquet \
+    --llm-cache cvd_eda/logs/curation_llm_cache/
+```
+
+Writes `cvd_eda/logs/cvd_relevance_{dataset}.csv` (schema:
+`sample_id, matched_keyword, llm_relevance, confidence, reasoning,
+source_series_id`) plus `curation_log_{dataset}.json`. Task 4 and Task 5 both
+consume the CSV from that path.
+
+## Running Task 4
+
+Turns raw counts into a CVD-subset, deduped, gene-ID-harmonized, filtered,
+normalized matrix per dataset. Full details in `processing/README.md`.
+Briefly:
+
+```bash
+source .venv/bin/activate
+uv pip install h5py pandas pyarrow      # if not already installed
+
+# ARCHS4
+python -m cvd_eda.processing.run \
+    --dataset archs4 \
+    --archs4-h5 "$CVD_EDA_DATA_DIR/archs4_raw.h5" \
+    --relevance-csv cvd_eda/logs/cvd_relevance_archs4.csv \
+    --output-dir   cvd_eda/logs/task4_out/
+
+# RECOUNT3 (one invocation processes every project in the directory)
+python -m cvd_eda.processing.run \
+    --dataset recount3 \
+    --recount3-counts-dir cvd_eda/data/recount3_raw/ \
+    --relevance-csv       cvd_eda/logs/cvd_relevance_recount3.csv \
+    --output-dir          cvd_eda/logs/task4_out/
+```
+
+Writes `cvd_matrix_{dataset}_normalized.parquet`,
+`cvd_sample_meta_{dataset}.parquet`, and `processing_log_{dataset}.json`
+per dataset. The processing log records the exact config used, per-step
+sample/gene counts, and the normalization method, so Task 7 (reporting) can
+reconstruct the provenance without re-running.
+
+Offline smoke test (fabricates synthetic data, drives the whole pipeline):
+
+```bash
+python -m cvd_eda.processing.smoke_test
+```
