@@ -26,6 +26,8 @@ cvd_eda/
 │   ├── setup.sh                     (installs recount3 / arrow in R)
 │   └── README.md
 ├── processing/                     (Task 4 — data processing & cleaning; see its README)
+├── labeling/                       (Task 5 — labeling agent; see its README)
+├── reporting/                      (Task 7 — reporting agent; see its README)
 ├── data/                            (created at runtime; not committed)
 │   ├── human_gene_v2.5.h5           (~45 GB — do not commit)
 │   ├── archs4_raw.h5 -> human_gene_v2.5.h5   (stable symlink)
@@ -48,8 +50,8 @@ repo's own filesystem on the HPC login node.
 | 3 | Metadata curation (CVD relevance) | Claude   | **Implemented** — see `curation/README.md` |
 | 4 | Data processing & cleaning        | Claude   | **Implemented** — see `processing/README.md` |
 | 5 | Labeling (⚠ human review gate)     | Claude   | **Implemented** — see `labeling/README.md` |
-| 6 | EDA                               | —        | Not started    |
-| 7 | Reporting                         | —        | Not started    |
+| 6 | EDA                               | Claude   | **Implemented** — see `eda/README.md` |
+| 7 | Reporting                         | Claude   | **Implemented** — see `reporting/README.md` |
 
 ## Running Task 1
 
@@ -155,4 +157,74 @@ Offline smoke test (fabricates synthetic data, drives the whole pipeline):
 
 ```bash
 python -m cvd_eda.processing.smoke_test
+```
+
+## Running Task 6
+
+Runs the QC/EDA suite on **one** dataset at a time (the Task 4 output and
+the human-reviewed Task 5 labels for that dataset). Full details in
+`eda/README.md`. Briefly:
+
+```bash
+source .venv/bin/activate
+pip install pyarrow matplotlib scipy         # if not already installed
+
+# LLM interpretation is optional — see `eda/README.md`.
+python -m cvd_eda.eda.run \
+    --dataset      archs4 \
+    --matrix       cvd_eda/logs/task4_out/cvd_matrix_archs4_normalized.parquet \
+    --sample-meta  cvd_eda/logs/task4_out/cvd_sample_meta_archs4.parquet \
+    --labels       cvd_eda/logs/label_proposals_archs4.reviewed.csv \
+    --output-dir   cvd_eda/logs/task6_out/ \
+    --llm-cache    cvd_eda/logs/eda_llm_cache/
+
+# Skip the Anthropic calls entirely — plots + stats still land on disk:
+python -m cvd_eda.eda.run ... --disable-llm-interpretation
+```
+
+Writes per-dataset PNGs under `task6_out/{dataset}/eda_plots/`, a
+tall-format `eda_summary_stats_{dataset}.csv`, and an
+`eda_run_log_{dataset}.json` for Task 7. The CLI refuses to read a
+labels file whose name is missing `.reviewed.` (the Task 5 human-review
+convention) — the escape hatch is `--allow-unreviewed-labels` and it is
+intentionally verbose.
+
+Offline smoke test (fabricates a planted batch effect + control arm):
+
+```bash
+python -m cvd_eda.eda.smoke_test
+```
+
+## Running Task 7
+
+Aggregates every prior log/CSV under `--inputs-dir` into a single Markdown
+report with a go/no-go recommendation. Full details in
+`reporting/README.md`. Briefly:
+
+```bash
+source .venv/bin/activate
+
+# Deterministic report (no LLM required):
+python -m cvd_eda.reporting.run \
+    --inputs-dir cvd_eda/logs \
+    --output     cvd_eda/logs/cvd_eda_report.md \
+    --disable-llm
+
+# With the executive-summary paragraph:
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m cvd_eda.reporting.run \
+    --inputs-dir cvd_eda/logs \
+    --output     cvd_eda/logs/cvd_eda_report.md
+```
+
+The report tolerates any subset of Tasks 1-6 being absent — missing
+artifacts are surfaced in a `Sources` table and fold into the go/no-go
+rubric. Task 5's raw `label_proposals.csv` counts as *not* reviewed; only
+`label_proposals*.reviewed.csv` clears the human checkpoint. Add
+`--exit-code-on-no-go 3` to make Task 7 block a CI pipeline.
+
+Offline smoke test (fabricates every artifact, drives the CLI):
+
+```bash
+python -m cvd_eda.reporting.smoke_test
 ```
