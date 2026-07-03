@@ -27,8 +27,14 @@ dependencies = [
 train = ["deepspeed==0.14.0", "ninja", "wandb"]
 # CVD EDA workflow (cvd_eda/*, see .claude/EDA_CLAUDE_TASKS.md). Kept
 # separate so the CVD analysis boxes don't have to install the
-# Torch/Transformers pins. Currently: Task 3 (curation) + Task 5 (labeling).
-eda = ["anthropic>=0.40.0"]
+# Torch/Transformers pins. Covers Tasks 3 (curation) + 5 (labeling) +
+# 6 (EDA plots/interpretation).
+eda = [
+    "anthropic>=0.40.0",
+    "pyarrow",
+    "matplotlib",
+    "scipy",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/DLCV-BUAA/TinyLLaVABench"
