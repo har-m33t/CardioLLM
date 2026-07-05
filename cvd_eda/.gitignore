@@ -1,5 +1,0 @@
-# Raw H5 / parquet payloads and per-run logs are not source. They are
-# reproducible from the ingestion scripts and are far too large to commit
-# (the ARCHS4 human_gene H5 alone is ~45 GB).
-data/
-logs/
