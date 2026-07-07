@@ -1,0 +1,16 @@
+{
+  "started": "2026-07-07T19:02:22.274516+00:00",
+  "finished": "2026-07-07T19:19:44.572323+00:00",
+  "n_reference_samples": 10000,
+  "n_downstream_samples": 5000,
+  "seed": 20260705,
+  "log2_pseudocount": 1.0,
+  "singlecell_filter": {
+    "total": 1098771,
+    "kept": 779009,
+    "excluded": 319762,
+    "excluded_pct": 29.1018,
+    "threshold": 0.5
+  },
+  "note": "Reference-distribution quantile norm (Bolstad-style tie handling), computed on a random uniform subsample of the singlecell-filtered pool. The full corpus is never materialized as a normalized matrix \u2014 see normalize.py docstring."
+}

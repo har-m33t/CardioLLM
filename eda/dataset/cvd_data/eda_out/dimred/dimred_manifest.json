@@ -1,0 +1,14 @@
+{
+  "started": "2026-07-07T19:19:44.623044+00:00",
+  "finished": "2026-07-07T19:23:08.554287+00:00",
+  "perplexity_sample_centric": 50,
+  "perplexity_gene_centric": 30,
+  "tsne_initial_dims": 50,
+  "tsne_seed": 20260705,
+  "pca_seed": 20260705,
+  "n_pcs": 50,
+  "n_points_sample_centric_primary": 5000,
+  "n_points_sample_centric_stability": null,
+  "n_points_gene_centric": 67186,
+  "note": "sklearn Barnes-Hut TSNE with PCA pre-projection to 50 dims to match Rtsne's initial_dims default. Run on the step-3 subsample, not the full corpus \u2014 documented deviation from Lachmann et al. 2018. The stability run is a nested subset of the primary pool, drawn with a distinct seed."
+}

@@ -1,0 +1,11 @@
+{
+  "started": "2026-07-07T19:23:08.556271+00:00",
+  "finished": "2026-07-07T19:23:10.500534+00:00",
+  "n_downstream_input": 5000,
+  "heatmap_n": 2000,
+  "heatmap_seed": 20260705,
+  "linkage_method": "average",
+  "distance": "1 - Pearson r (symmetrized)",
+  "subsample_selection": "uniform random without replacement, NESTED within the step-3 N=5000 subsample (i.e. drawn from the same sample-ID pool that dimred.py used for the primary sample-centric t-SNE)",
+  "note": "Full-corpus sample-sample correlation would be an n_samples x n_samples matrix (>5TB float32 at ~700k samples); we sub-sub-sample from the step-3 subsample to make the heatmap storable and legible. The nested draw guarantees cross-figure consistency with dimred.py's primary sample-centric t-SNE."
+}

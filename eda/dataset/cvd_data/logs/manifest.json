@@ -1,0 +1,8 @@
+{
+  "run_timestamp": "2026-07-06T22:28:22.264467+00:00",
+  "outdir": "/Users/harmeetsingh/cvd_data",
+  "archs4": {
+    "status": "failed",
+    "error": "expected str, bytes or os.PathLike object, not NoneType"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "h5_path": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/archs4/human_gene_v2.latest.h5",
+  "outdir": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/eda_out",
+  "run_started": "2026-07-07T19:02:22.274413+00:00",
+  "steps": [
+    {
+      "step": "normalize",
+      "status": "ok",
+      "started": "2026-07-07T19:02:22.274417+00:00",
+      "finished": "2026-07-07T19:19:44.592018+00:00",
+      "output": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/eda_out/normalized"
+    },
+    {
+      "step": "dimred",
+      "status": "ok",
+      "started": "2026-07-07T19:19:44.593689+00:00",
+      "finished": "2026-07-07T19:23:08.556135+00:00",
+      "output": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/eda_out/dimred"
+    },
+    {
+      "step": "clustering",
+      "status": "ok",
+      "started": "2026-07-07T19:23:08.556178+00:00",
+      "finished": "2026-07-07T19:23:10.501350+00:00",
+      "output": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/eda_out/clustering"
+    },
+    {
+      "step": "gene_summary",
+      "status": "ok",
+      "started": "2026-07-07T19:23:10.501400+00:00",
+      "finished": "2026-07-07T20:43:12.198266+00:00",
+      "output": "/Users/harmeetsingh/UofA/TinyLLaVA_Factory/eda/dataset/cvd_data/eda_out/gene_summary/gene_summary_full.csv"
+    }
+  ],
+  "run_finished": "2026-07-07T20:43:12.198376+00:00"
+}
