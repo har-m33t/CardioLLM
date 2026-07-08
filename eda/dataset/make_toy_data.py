@@ -13,6 +13,8 @@ Layout produced (matches `dataset/io.py`):
     /meta/samples/geo_accession         S,      shape (n_samples,)
     /meta/samples/series_id             S,      shape (n_samples,)
     /meta/samples/source_name_ch1       S,      shape (n_samples,)
+    /meta/samples/title                 S,      shape (n_samples,)
+    /meta/samples/characteristics_ch1   S,      shape (n_samples,)
     /meta/samples/submission_date       S,      shape (n_samples,)
     /meta/samples/singlecellprobability f32,    shape (n_samples,)
     /meta/samples/readsaligned          i64,    shape (n_samples,)
@@ -44,12 +46,50 @@ def _s(strings) -> np.ndarray:
     return np.array([str(x).encode("utf-8") for x in strings])
 
 
+# Toy CVD-flavored strings dropped into `title` / `characteristics_ch1` for a
+# controllable fraction of samples so the elastic net label module has real
+# positives to find. The list intentionally spans several of the keywords the
+# elasticnet stage uses so the regex, not a single-keyword shortcut, is what
+# lights them up.
+_CVD_TOY_TITLES = (
+    "Cardiac hypertrophy in mouse model",
+    "Heart failure patient transcriptome",
+    "Myocardial infarction time course",
+    "Atherosclerosis progression study",
+    "Cardiomyopathy dilated ventricle",
+    "Coronary artery disease vs healthy",
+    "Cardiac fibrosis after ischemic heart injury",
+)
+_CVD_TOY_CHARACTERISTICS = (
+    "disease: heart failure",
+    "condition: hypertension",
+    "tissue: aortic tissue",
+    "diagnosis: atrial fibrillation",
+    "phenotype: cardiac hypertrophy",
+)
+_NON_CVD_TOY_TITLES = (
+    "Bulk RNA-seq of leukocyte subsets",
+    "Transcriptome of liver hepatocytes",
+    "Skeletal muscle differentiation",
+    "Neural progenitor cell profiling",
+    "Colon adenocarcinoma vs adjacent normal",
+)
+_NON_CVD_TOY_CHARACTERISTICS = (
+    "tissue: liver",
+    "condition: healthy control",
+    "cell type: hepatocyte",
+    "disease: colorectal cancer",
+    "phenotype: wild type",
+)
+
+
 def make_toy_h5(
     out_path: Path,
     n_genes: int = 500,
     n_samples: int = 2000,
     seed: int = 20260705,
     include_biotype: bool = True,
+    cvd_positive_frac: float = 0.05,
 ) -> Path:
     """Write a synthetic ARCHS4-shaped H5 file to `out_path` and return it."""
     rng = np.random.default_rng(seed)
@@ -69,6 +109,20 @@ def make_toy_h5(
     gsm = _s([f"GSM{1_000_000 + i}" for i in range(n_samples)])
     series = _s([f"GSE{200_000 + (i // 25)}" for i in range(n_samples)])
     source = _s(rng.choice(["blood", "brain", "liver", "muscle"], size=n_samples))
+
+    # CVD-flavored title / characteristics for `cvd_positive_frac` of samples;
+    # rest get neutral strings. This is what the elastic net label module reads.
+    is_cvd = rng.uniform(size=n_samples) < cvd_positive_frac
+    titles = [
+        (rng.choice(_CVD_TOY_TITLES) if flag else rng.choice(_NON_CVD_TOY_TITLES))
+        for flag in is_cvd
+    ]
+    chars = [
+        (rng.choice(_CVD_TOY_CHARACTERISTICS) if flag else rng.choice(_NON_CVD_TOY_CHARACTERISTICS))
+        for flag in is_cvd
+    ]
+    titles_enc = _s(titles)
+    chars_enc = _s(chars)
     years = rng.integers(2012, 2025, size=n_samples)
     months = rng.integers(1, 13, size=n_samples)
     days = rng.integers(1, 28, size=n_samples)
@@ -96,6 +150,8 @@ def make_toy_h5(
         m.create_dataset("geo_accession", data=gsm)
         m.create_dataset("series_id", data=series)
         m.create_dataset("source_name_ch1", data=source)
+        m.create_dataset("title", data=titles_enc)
+        m.create_dataset("characteristics_ch1", data=chars_enc)
         m.create_dataset("submission_date", data=dates)
         m.create_dataset("singlecellprobability", data=sc_prob)
         m.create_dataset("readsaligned", data=reads_aligned)
@@ -117,6 +173,8 @@ def main():
     p.add_argument("--seed", type=int, default=20260705)
     p.add_argument("--no-biotype", action="store_true",
                    help="Omit /meta/genes/gene_biotype (exercises step 6's biotype-absent path).")
+    p.add_argument("--cvd-positive-frac", type=float, default=0.05,
+                   help="Fraction of samples given CVD-keyword titles/characteristics (elasticnet label positives).")
     args = p.parse_args()
 
     path = make_toy_h5(
@@ -125,6 +183,7 @@ def main():
         n_samples=args.n_samples,
         seed=args.seed,
         include_biotype=not args.no_biotype,
+        cvd_positive_frac=args.cvd_positive_frac,
     )
     print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
 
